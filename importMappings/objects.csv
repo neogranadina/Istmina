@@ -1,0 +1,49 @@
+Rule type,Source,CA table.element,Group,Options,Refinery,Refinery parameters,Original values,Replacement values,Source description,Notes
+Mapping,1,ca_objects.idno,,,,,,,,
+Mapping,6,ca_objects.preferred_labels,,,,,,,,
+Mapping,22,ca_objects.unitdate.date_value,fecha_inicial,,,,,,,
+Constant,creation,ca_objects.unitdate.dates_types,fecha_inicial,,,,,,,x
+Mapping,3,ca_object_representations,,,,,,,,
+Mapping,8,ca_places,,{“delimiter”: “|”},placeSplitter,"{
+""delimiter"":""|"",
+""relationshipType"":""created"",
+""placeType"":""place""}",,,,
+Mapping,11,ca_objects.subject,,{“delimiter”: “|”},,,,,,
+Mapping,19,ca_collections,,,collectionSplitter,"{""relationshipType"":""part_of"",
+""delimiter"":""|"",
+""collectionType"": ""caja"",
+""attributes"": {
+""idno"":""^17"",
+""name"":""^19"",
+""ca_collections.description"":""^20"",
+""ca_collections.unitdate.date_value"":""^21"",
+""ca_collections.unitdate.dates_types"":""creation""
+},
+""parents"":[
+{""idno"":""^18"",""name"":""^19"",""type"":""fondo""},
+{""idno"":""AHJCI"",""name"":""Archivo Histórico del Juzgado del Circuito de Istmina"",""type"":""institucion""}
+]}",,,,
+Mapping,12,ca_objects.description,,,,,,,,
+Mapping,9,ca_entities,,"{""delimiter"": ""|""}",entitySplitter,"{""relationshipType"":""mencion"",
+""delimiter"":""|"",
+""entityType"":""ind""
+}",,,,
+Mapping,10,ca_entities,,"{""delimiter"": ""|""}",entitySplitter,"{""relationshipType"":""mencion"",
+""delimiter"":""|"",
+""entityType"":""corp""
+}",,,,
+Constant,spanish,ca_objects.langmaterial.language,,,,,,,,
+Mapping,15,ca_objects.note,,,,,,,,
+Mapping,7,ca_objects.arrangement,,,,,,,,
+Mapping,16,ca_objects.descrules,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,Setting name,Setting value,Description,Notes,,,,,,
+Setting,name,Istmina MFC,Human readable name of the mapping,Arbitrary text,,,,,,
+Setting,code,ahjci_mfc,Alphanumeric code of the mapping,"Arbitrary, no special characters or spaces",,,,,,
+Setting,inputFormats,XLSX,Sets type of source (input) data that can be handled by this import mapping. Values are format codes defined by the various DataReader plugins.,file type,,,,,,
+Setting,table,ca_objects,,,,,,,,
+Setting,type,item,,,,,,,,
+Setting,numInitialRowsToSkip,1,,,,,,,,
+Setting,locale,es_ES,,,,,,,,
+Setting,errorPolicy,stop,,,,,,,,
