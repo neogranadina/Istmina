@@ -3,3 +3,8 @@ __pycache__/
 
 import_scripts.md
 .dvenv
+
+tmp/
+logs/
+config.conf
+folder_cache.json
