@@ -7,15 +7,38 @@ from datetime import datetime
 import json
 import time
 
-config = configparser.ConfigParser()
-config.read('config.conf')
+# Get the directory where the script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
-rclone_log_file = "logs/rclone.log"
+# Ensure logs directory exists
+LOGS_DIR = os.path.join(PROJECT_ROOT, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+config = configparser.ConfigParser()
+config.read(os.path.join(PROJECT_ROOT, 'config.conf'))
+
+rclone_log_file = os.path.join(LOGS_DIR, "rclone.log")
+processing_log_file = os.path.join(LOGS_DIR, "processing.log")
 
 source_folder = config['dropbox']['path']
 destination_folder = config['dropbox']['path_safe']
 
-def get_folder_structure(source_folder, cache_file="folder_cache.json", cache_ttl=3600):
+def get_processed_files():
+    """Read processing log and return set of successfully processed files"""
+    processed_files = set()
+    if os.path.exists(processing_log_file):
+        with open(processing_log_file, 'r') as f:
+            for line in f:
+                if "Processed" in line and "successfully" in line:
+                    # Extract filename from log line
+                    parts = line.split("Processed ")
+                    if len(parts) > 1:
+                        filename = parts[1].split(" successfully")[0]
+                        processed_files.add(filename)
+    return processed_files
+
+def get_folder_structure(source_folder, cache_file="folder_cache.json", cache_ttl=172800):
     """Get folder structure from Dropbox or cache if available and not expired"""
     if os.path.exists(cache_file):
         with open(cache_file, 'r') as f:
@@ -78,6 +101,10 @@ def process_images(source_folder, destination_folder, temp_folder="/tmp/imgs", d
     logging.info(f"Destination: {destination_folder}")
     logging.info(f"Dry run: {dry_run}")
 
+    # Get list of already processed files
+    processed_files = get_processed_files()
+    logging.info(f"Found {len(processed_files)} previously processed files")
+
     if not os.path.exists(temp_folder):
         os.makedirs(temp_folder)
         logging.info(f"Created temporary folder: {temp_folder}")
@@ -112,6 +139,11 @@ def process_images(source_folder, destination_folder, temp_folder="/tmp/imgs", d
                 subprocess.run(["rclone", "mkdir", f"dropbox:{doc_folder_path}"], check=True)
             
             for tiff_file in files:
+                # Skip if file was already processed
+                if tiff_file in processed_files:
+                    logging.info(f"Skipping {tiff_file} - already processed")
+                    continue
+
                 source_path = f"{source_folder}/{main_folder}/{doc_folder}/{tiff_file}"
                 jpg_file = tiff_file.replace('.tif', '.jpg').replace('.tiff', '.jpg')
                 dest_path = f"{doc_folder_path}" 
@@ -170,7 +202,7 @@ if __name__ == "__main__":
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler('logs/processing.log'),
+            logging.FileHandler(processing_log_file),
             logging.StreamHandler() 
         ]
     )
