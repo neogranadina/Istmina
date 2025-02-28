@@ -3,7 +3,6 @@ import subprocess
 from PIL import Image
 import configparser
 import logging
-from datetime import datetime
 import json
 import time
 
@@ -95,7 +94,7 @@ def get_folder_structure(source_folder, cache_file="folder_cache.json", cache_tt
         logging.error(f"Error building folder structure: {e}")
         return None
 
-def process_images(source_folder, destination_folder, temp_folder="/tmp/imgs", dry_run=False, cache_ttl=3600):
+def process_images(source_folder, destination_folder, temp_folder="/tmp/imgs", dry_run=False, cache_ttl=172800):
     """Process images from source to destination, maintaining folder structure"""
     logging.info(f"Starting image processing job with source: {source_folder}")
     logging.info(f"Destination: {destination_folder}")
