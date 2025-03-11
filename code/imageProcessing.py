@@ -111,7 +111,7 @@ class DropboxImageProcessor:
             logging.error(f"Error building folder structure: {e}")
             return None
 
-    def process_images(self, temp_folder="/tmp/imgs", dry_run=False, cache_ttl=172800):
+    def process_images(self, temp_folder="tmp/imgs", dry_run=False, cache_ttl=172800):
         """Process images from source to destination, maintaining folder structure"""
         logging.info(f"Starting image processing job with source: {self.source_folder}")
         logging.info(f"Destination: {self.destination_folder}")
@@ -211,7 +211,7 @@ class DropboxImageProcessor:
 
         logging.info("Image processing job completed")
 
-    def process_specific_folder(self, main_folder, doc_folder, temp_folder="/tmp/imgs", dry_run=False):
+    def process_specific_folder(self, main_folder, doc_folder, temp_folder="tmp/imgs", dry_run=False):
         """Process images from a specific document folder
         
         Args:
@@ -342,7 +342,7 @@ class DropboxImageProcessor:
             logging.error(f"Error retrieving document folders: {e}")
             return None
 
-    def process_multiple_folders(self, main_folder, doc_folders, temp_folder="/tmp/imgs", dry_run=False):
+    def process_multiple_folders(self, main_folder, doc_folders, temp_folder="tmp/imgs", dry_run=False):
         """Process multiple document folders from a main folder
         
         Args:
