@@ -317,6 +317,58 @@ class DropboxImageProcessor:
             logging.error(f"Error accessing folder structure: {e}")
             return
 
+    def get_doc_folders_from_main(self, main_folder):
+        """Retrieve all document folders from a specific main folder
+        
+        Args:
+            main_folder (str): Main folder name (e.g., 'MFC_B01')
+            
+        Returns:
+            list: List of document folder names, or None if error occurs
+        """
+        logging.info(f"Retrieving document folders from {main_folder}")
+        
+        try:
+            result = subprocess.run(
+                ["rclone", "lsd", f"dropbox:{self.source_folder}/{main_folder}",
+                 "--log-file", self.rclone_log_file, "--log-level", "INFO"],
+                capture_output=True, text=True, check=True
+            )
+            doc_folders = [line.split()[-1] for line in result.stdout.strip().split("\n") if line]
+            logging.info(f"Found {len(doc_folders)} document folders in {main_folder}")
+            return doc_folders
+            
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error retrieving document folders: {e}")
+            return None
+
+    def process_multiple_folders(self, main_folder, doc_folders, temp_folder="/tmp/imgs", dry_run=False):
+        """Process multiple document folders from a main folder
+        
+        Args:
+            main_folder (str): Main folder name (e.g., 'MFC_B01')
+            doc_folders (list): List of document folder names to process
+            temp_folder (str): Temporary folder for processing
+            dry_run (bool): If True, only logs actions without executing them
+        """
+        logging.info(f"Processing multiple folders from {main_folder}")
+        logging.info(f"Number of folders to process: {len(doc_folders)}")
+        
+        for doc_folder in doc_folders:
+            logging.info(f"Starting processing of {doc_folder}")
+            try:
+                self.process_specific_folder(
+                    main_folder=main_folder,
+                    doc_folder=doc_folder,
+                    temp_folder=f"{temp_folder}_{doc_folder}",  # Unique temp folder for each doc
+                    dry_run=dry_run
+                )
+            except Exception as e:
+                logging.error(f"Error processing {doc_folder}: {e}")
+                continue
+            
+        logging.info("Completed processing all specified folders")
+
 def main():
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.conf')
     processor = DropboxImageProcessor(config_path)
