@@ -211,6 +211,112 @@ class DropboxImageProcessor:
 
         logging.info("Image processing job completed")
 
+    def process_specific_folder(self, main_folder, doc_folder, temp_folder="/tmp/imgs", dry_run=False):
+        """Process images from a specific document folder
+        
+        Args:
+            main_folder (str): Main folder name (e.g., 'MFC_B01')
+            doc_folder (str): Document folder name (e.g., 'EAP1477_MFC_B01_Doc01_HurtadovsCastillo')
+            temp_folder (str): Temporary folder for processing
+            dry_run (bool): If True, only logs actions without executing them
+        """
+        logging.info(f"Processing specific folder - Main: {main_folder}, Doc: {doc_folder}")
+        logging.info(f"Dry run: {dry_run}")
+
+        processed_files = self.get_processed_files()
+
+        if not os.path.exists(temp_folder):
+            os.makedirs(temp_folder)
+            logging.info(f"Created temporary folder: {temp_folder}")
+
+        try:
+            # Get TIFF files in the specific document folder
+            result = subprocess.run(
+                ["rclone", "lsf", f"dropbox:{self.source_folder}/{main_folder}/{doc_folder}", 
+                 "--files-only", "--include", "*.tif", "--log-file", self.rclone_log_file, 
+                 "--log-level", "INFO"],
+                capture_output=True, text=True, check=True
+            )
+            files = [f for f in result.stdout.strip().split("\n") if f]
+            
+            if not files:
+                logging.warning(f"No TIFF files found in {main_folder}/{doc_folder}")
+                return
+
+            logging.info(f"Found {len(files)} TIFF files")
+            
+            # Create destination folders
+            main_folder_path = f"{self.destination_folder}/{main_folder}"
+            doc_folder_path = f"{main_folder_path}/{doc_folder}"
+            
+            if not dry_run:
+                logging.info(f"Creating directories: {doc_folder_path}")
+                subprocess.run(["rclone", "mkdir", f"dropbox:{main_folder_path}"], check=True)
+                subprocess.run(["rclone", "mkdir", f"dropbox:{doc_folder_path}"], check=True)
+            else:
+                logging.info(f"[DRY RUN] Would create directory: {doc_folder_path}")
+
+            # Process each TIFF file
+            for tiff_file in files:
+                if tiff_file in processed_files:
+                    logging.info(f"Skipping {tiff_file} - already processed")
+                    continue
+
+                source_path = f"{self.source_folder}/{main_folder}/{doc_folder}/{tiff_file}"
+                jpg_file = tiff_file.replace('.tif', '.jpg').replace('.tiff', '.jpg')
+                
+                if dry_run:
+                    logging.info(f"[DRY RUN] Would process: {source_path}")
+                    logging.info(f"[DRY RUN] Would save to: {doc_folder_path}/{jpg_file}")
+                    continue
+                
+                try:
+                    # Download TIFF file
+                    logging.info(f"Downloading: {source_path}")
+                    temp_tiff = os.path.join(temp_folder, tiff_file)
+                    subprocess.run(
+                        ["rclone", "copy", f"dropbox:{source_path}", temp_folder],
+                        check=True
+                    )
+                    
+                    # Convert to JPG
+                    if os.path.exists(temp_tiff):
+                        logging.info(f"Converting {tiff_file} to JPEG")
+                        temp_jpg = os.path.join(temp_folder, jpg_file)
+                        with Image.open(temp_tiff) as img:
+                            img.convert('RGB').save(temp_jpg, 'JPEG', quality=85)
+                        
+                        # Upload JPG
+                        logging.info(f"Uploading: {doc_folder_path}/{jpg_file}")
+                        subprocess.run(
+                            ["rclone", "copy", temp_jpg, f"dropbox:{doc_folder_path}"],
+                            check=True
+                        )
+                        
+                        # Clean up temp files
+                        os.remove(temp_tiff)
+                        os.remove(temp_jpg)
+                        logging.info(f"Processed {tiff_file} successfully")
+                    else:
+                        logging.error(f"Failed to download {tiff_file}")
+                    
+                except Exception as e:
+                    logging.error(f"Error processing {tiff_file}: {e}")
+                    continue
+
+            if not dry_run:
+                try:
+                    os.rmdir(temp_folder)
+                    logging.info("Removed temporary folder")
+                except Exception as e:
+                    logging.error(f"Error removing temporary folder: {e}")
+
+            logging.info("Folder processing completed")
+
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error accessing folder structure: {e}")
+            return
+
 def main():
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.conf')
     processor = DropboxImageProcessor(config_path)
